@@ -26,6 +26,8 @@ def reset_timer():
 # ---------------------------- TIMER MECHANISM ------------------------------- #
 
 def start_timer():
+    window.attributes('-topmost', 1)
+    window.attributes('-topmost', 0)
     global reps
     reps += 1
 
