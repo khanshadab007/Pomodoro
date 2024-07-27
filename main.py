@@ -11,32 +11,49 @@ WORK_MIN = 1
 SHORT_BREAK_MIN = 5
 LONG_BREAK_MIN = 20
 reps = 0
-
+timer = None
+timer_running = False  # Flag to check if the timer is running
+timer_reset = False  # Flag to check if the timer has been reset
 
 # ---------------------------- TIMER RESET ------------------------------- #
+def reset_timer():
+    global timer, reps, timer_running, timer_reset
+    if timer:
+        window.after_cancel(timer)
+    canvas.itemconfig(timer_text, text="00:00")
+    title_label.config(text="Timer", fg=GREEN)
+    check_marks.config(text="")
+    reps = 0
+    timer_running = False  # Stop the timer from running
+    timer_reset = True  # Set the timer_reset flag
+
 
 # ---------------------------- TIMER MECHANISM ------------------------------- #
 def start_timer():
-    count_down(5 * 60)
-    global reps
-    reps += 1
-    work_sec = WORK_MIN * 60
-    short_break_sec = SHORT_BREAK_MIN * 60
-    long_break_sec = LONG_BREAK_MIN * 60
+    global reps, timer_running, timer_reset
+    if not timer_running:  # Prevent starting a new timer if one is already running
+        timer_running = True
+        timer_reset = False  # Reset the timer_reset flag
+        reps += 1
 
-    if reps % 8 == 0:
-        title_label.config(text="Break", fg=RED, bg=YELLOW, font=(FONT_NAME, 50))
-        count_down(long_break_sec)
-    elif reps % 2 == 0:
-        title_label.config(text="Break", fg=PINK, bg=YELLOW, font=(FONT_NAME, 50))
-        count_down(short_break_sec)
-    else:
-        title_label.config(text="Work", fg=GREEN, bg=YELLOW, font=(FONT_NAME, 50))
-        count_down(work_sec)
+        work_sec = WORK_MIN * 60
+        short_break_sec = SHORT_BREAK_MIN * 60
+        long_break_sec = LONG_BREAK_MIN * 60
+
+        if reps % 8 == 0:
+            title_label.config(text="Break", fg=RED)
+            count_down(long_break_sec)
+        elif reps % 2 == 0:
+            title_label.config(text="Break", fg=PINK)
+            count_down(short_break_sec)
+        else:
+            title_label.config(text="Work", fg=GREEN)
+            count_down(work_sec)
 
 
 # ---------------------------- COUNTDOWN MECHANISM ------------------------------- #
 def count_down(count):
+    global timer, timer_running, timer_reset
     count_min = math.floor(count / 60)
     count_sec = count % 60
     if count_sec < 10:
@@ -44,31 +61,40 @@ def count_down(count):
 
     canvas.itemconfig(timer_text, text=f"{count_min}:{count_sec}")
     if count > 0:
-        window.after(1000, count_down, count - 1)
+        timer = window.after(1000, count_down, count - 1)
     else:
-        start_timer()
+        if not timer_reset:  # Check if the timer has been reset
+            start_timer()
+            mark = ""
+            work_sessions = math.floor(reps / 2)
+            for _ in range(work_sessions):
+                mark += "✔️"
+            check_marks.config(text=mark)
+        timer_running = False  # Timer finished, allow it to start again
+
 
 # ---------------------------- UI SETUP ------------------------------- #
 window = Tk()
 window.title("Pomodoro")
 window.config(padx=100, pady=50, bg=YELLOW)
 
-#Title_Label
+# Title Label
 title_label = Label(text="Timer", fg=GREEN, bg=YELLOW, font=(FONT_NAME, 50))
 title_label.grid(column=1, row=0)
 
 canvas = Canvas(width=200, height=230, bg=YELLOW, highlightthickness=0)
 tomato_img = PhotoImage(file="tomato.png")
-canvas.create_image(100, 115, image=tomato_img, )
+canvas.create_image(100, 115, image=tomato_img)
 canvas.grid(column=1, row=1)
 timer_text = canvas.create_text(103, 130, text="00:00", fill="white", font=(FONT_NAME, 28, "bold"))
 
 start_button = Button(text="Start", highlightthickness=0, command=start_timer)
 start_button.grid(column=0, row=2)
 
-reset_button = Button(text="Reset", highlightthickness=0)
+reset_button = Button(text="Reset", highlightthickness=0, command=reset_timer)
 reset_button.grid(column=2, row=2)
 
-check_marks = Label(text="✔️", fg=GREEN, bg=YELLOW, highlightcolor=GREEN)
+check_marks = Label(fg=GREEN, bg=YELLOW, highlightcolor=GREEN)
 check_marks.grid(column=1, row=3)
+
 window.mainloop()
